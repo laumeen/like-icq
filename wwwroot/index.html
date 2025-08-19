@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Like ICQ Voice Chat</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background: #2c2f33;
+            color: white;
+            padding: 20px;
+        }
+        .sidebar h2 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .main {
+            flex: 1;
+            background: #f2f2f2;
+            padding: 20px;
+        }
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            background: #7289da;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-left: 5px;
+        }
+        .btn:hover {
+            background: #5b6eae;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        .user-item {
+            margin: 5px 0;
+            padding: 5px;
+            background: #3a3d41;
+            border-radius: 4px;
+        }
+        .room-box {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Kullanıcı: <span id="username"></span></h2>
+        <h2>Katılanlar</h2>
+        <ul id="userList"></ul>
+    </div>
+    <div class="main">
+        <h1>Like ICQ Voice Chat</h1>
+        <div class="room-box">
+            <input type="text" id="roomInput" placeholder="Oda adı yaz...">
+            <button id="joinBtn" class="btn">Sohbete Katıl</button>
+        </div>
+        <p id="status"></p>
+    </div>
+
+    <!-- SignalR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+
+    <script>
+        const userName = "User" + Math.floor(Math.random() * 1000);
+        document.getElementById("username").textContent = userName;
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/hub/voice")
+            .build();
+
+        connection.on("UserJoined", (user) => {
+            const li = document.createElement("li");
+            li.textContent = user;
+            li.classList.add("user-item");
+            document.getElementById("userList").appendChild(li);
+        });
+
+        // Ses başlat
+        async function startVoice() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                document.getElementById("status").textContent = "🎤 Mikrofon aktif!";
+                console.log("Mikrofon açıldı:", stream);
+
+                // Sesi geri dinleme için test (kendi sesini duymamak için yorum satırı yapabilirsin)
+                const audio = document.createElement("audio");
+                audio.srcObject = stream;
+                audio.autoplay = true;
+                document.body.appendChild(audio);
+
+            } catch (err) {
+                console.error("Mikrofon hatası:", err);
+                document.getElementById("status").textContent = "❌ Mikrofon açılamadı";
+            }
+        }
+
+        document.getElementById("joinBtn").addEventListener("click", async () => {
+            try {
+                await connection.start();
+                const room = document.getElementById("roomInput").value || "Genel";
+                await connection.invoke("Join", userName, room);
+                document.getElementById("status").textContent = `✅ Odaya katıldın: ${room}`;
+                startVoice();
+            } catch (err) {
+                console.error(err.toString());
+            }
+        });
+    </script>
+</body>
+</html>

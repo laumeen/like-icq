@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "VihZe+c4nrwcYaFw3GqkJ3k/ih9iqCkpgoE049U0+qQ=",
+  "Source": "like-icq",
+  "BasePath": "_content/like-icq",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "like-icq\\wwwroot",
+      "Source": "like-icq",
+      "ContentRoot": "C:\\Users\\armag\\OneDrive\\Masaüstü\\like-icq\\wwwroot\\",
+      "BasePath": "_content/like-icq",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\armag\\OneDrive\\Masaüstü\\like-icq\\wwwroot\\index.html",
+      "SourceId": "like-icq",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\armag\\OneDrive\\Masaüstü\\like-icq\\wwwroot\\",
+      "BasePath": "_content/like-icq",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\index.html"
+    }
+  ]
+}
