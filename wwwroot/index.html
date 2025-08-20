@@ -1,155 +1,412 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <title>Like ICQ Voice Chat</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
-    <style>
-        body {
-            background-color: #121212;
-            color: white;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            display: flex;
-        }
-        .sidebar {
-            width: 220px;
-            background: #1f1f1f;
-            padding: 15px;
-        }
-        .chat-container {
-            flex: 1;
-            background: #2a2a2a;
-            margin: 20px;
-            padding: 15px;
-            border: 2px solid black;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-        }
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            background: #333;
-            padding: 10px;
-            border-radius: 6px;
-        }
-        .input-container {
-            display: flex;
-        }
-        .input-container input {
-            flex: 1;
-            padding: 8px;
-        }
-        .input-container button {
-            padding: 8px 12px;
-        }
-        .user-online {
-            color: lightgreen;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Samurai ICQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --accent: #ff0055;
+      --accent2:#ff3366;
+      --bgDark: rgba(0,0,0,0.85);
+      --panel: rgba(0,0,0,0.7);
+    }
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Sağlam arka plan: görsel yok, gradient */
+      background: linear-gradient(135deg, #1f1c2c 0%, #302b63 50%, #24243e 100%);
+      color: #fff;
+    }
+
+    /* ==== Login ==== */
+    #loginScreen {
+      background: var(--bgDark);
+      width: 360px;
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 0 28px rgba(255,0,85,0.35);
+      text-align: center;
+      animation: fadeIn .4s ease;
+    }
+    #loginScreen .logo {
+      font-size: 64px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 8px var(--accent);
+    }
+    #loginScreen h2 {
+      margin: 0 0 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+    }
+    #loginScreen input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 10px;
+      background: #1e1e1e;
+      color: #fff;
+      text-align: center;
+      font-size: 15px;
+    }
+    #loginScreen button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #loginError { display:none; color:#ff6b6b; margin-top:8px; font-size: 14px; }
+
+    /* ==== App ==== */
+    #app {
+      display: none;
+      width: 100%;
+      height: 100vh;
+      padding: 12px;
+      gap: 12px;
+    }
+    #sidebar {
+      width: 280px;
+      background: var(--bgDark);
+      border: 2px solid var(--accent);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    #sidebar h3 {
+      margin: 0 0 10px;
+      text-align: center;
+      color: var(--accent);
+    }
+    .sectionTitle { margin: 12px 0 6px; font-weight: 600; opacity: .9; }
+    #users {
+      flex: 1;
+      overflow: auto;
+      background: #151515;
+      border-radius: 10px;
+      padding: 8px;
+      border: 1px solid #333;
+    }
+    .user {
+      padding: 10px;
+      margin: 6px 0;
+      background: #232323;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: .15s;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .user::before {
+      content:"";
+      width:10px; height:10px;
+      border-radius:50%;
+      background:#2ecc71;
+      box-shadow:0 0 8px #2ecc71;
+      display:inline-block;
+    }
+    .user:hover { background:#333; }
+
+    #rooms {
+      background:#151515;
+      border:1px solid #333;
+      border-radius:10px;
+      padding:8px;
+    }
+    .room {
+      padding:10px;
+      margin:6px 0;
+      background:#232323;
+      border-radius:10px;
+      cursor:pointer;
+      transition:.15s;
+      text-align:center;
+    }
+    .room.active, .room:hover { background:#383838; }
+
+    #main {
+      flex: 1;
+      min-width: 0;
+      display:flex;
+      flex-direction: column;
+      background: var(--panel);
+      border-radius: 14px;
+      border: 1px solid #3a3a3a;
+      overflow: hidden;
+    }
+    #chat {
+      flex:1;
+      overflow:auto;
+      padding: 14px;
+      background: rgba(0,0,0,.55);
+    }
+    .msg { margin:6px 0; }
+    .msg b { color:#ffd1dc; }
+    .sys { opacity:.8; font-style: italic; }
+    #composer {
+      padding: 10px;
+      display:flex; gap:10px;
+      border-top: 2px solid #2a2a2a;
+      background:#121212;
+    }
+    #message {
+      flex:1; padding:12px; border-radius:10px; border:none; outline:none;
+      background:#1e1e1e; color:#fff;
+      font-size:15px;
+    }
+    #sendBtn {
+      padding:12px 16px; border:none; border-radius:10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color:#fff; font-weight:600; cursor:pointer;
+    }
+
+    @keyframes fadeIn {
+      from {opacity:0; transform: translateY(-6px);}
+      to   {opacity:1; transform: translateY(0);}
+    }
+  </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h3>Odalar</h3>
-        <button onclick="joinRoom('Genel')">Genel</button>
-        <button onclick="joinRoom('Oyun')">Oyun</button>
-        <button onclick="joinRoom('Müzik')">Müzik</button>
-        <hr>
-        <h3>Kullanıcılar</h3>
-        <ul id="userList"></ul>
+
+  <!-- GİRİŞ -->
+  <div id="loginScreen">
+    <div class="logo">🗡️</div>
+    <h2>Samurai ICQ</h2>
+    <input id="usernameInput" type="text" placeholder="Kullanıcı adı" />
+    <input id="passwordInput" type="password" placeholder="Şifre (12345)" />
+    <button onclick="login()">Giriş Yap</button>
+    <div id="loginError">Hatalı şifre ya da boş kullanıcı adı.</div>
+  </div>
+
+  <!-- APP -->
+  <div id="app">
+    <div id="sidebar">
+      <h3>⚔ Samurai ICQ</h3>
+
+      <div class="sectionTitle">Kullanıcılar</div>
+      <div id="users"></div>
+
+      <div class="sectionTitle">Odalar</div>
+      <div id="rooms">
+        <div class="room active" onclick="joinRoom('Lobby')">Lobby</div>
+        <div class="room" onclick="joinRoom('Samurai Room')">Samurai Room</div>
+      </div>
     </div>
 
-    <div class="chat-container">
-        <h2>Sohbet</h2>
-        <div id="messages" class="messages"></div>
-        <div class="input-container">
-            <input id="messageInput" placeholder="Mesaj yaz..." />
-            <button onclick="sendMessage()">Gönder</button>
-        </div>
-        <button id="voiceBtn" onclick="toggleVoice()">🎤 Sohbete Bağlan</button>
+    <div id="main">
+      <div id="chat"></div>
+      <div id="composer">
+        <input id="message" type="text" placeholder="Mesaj yaz..." />
+        <button id="sendBtn" onclick="sendMessage()">Gönder</button>
+      </div>
     </div>
+  </div>
 
-    <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/voiceHub")
-            .build();
+  <audio id="remoteAudio" autoplay></audio>
 
-        let currentRoom = "Genel";
-        let localStream;
-        let audioContext = new AudioContext();
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+  <script>
+    // ====== Durum ======
+    let username = "";
+    let currentRoom = "Lobby";
+    let connection;
+    let peer;        // RTCPeerConnection
+    let localStream; // mikrofon akışı
 
-        const messagesDiv = document.getElementById("messages");
-        const userList = document.getElementById("userList");
-        const messageInput = document.getElementById("messageInput");
+    // ====== Login ======
+    function login() {
+      const u = document.getElementById("usernameInput").value.trim();
+      const p = document.getElementById("passwordInput").value.trim();
+      if (!u || p !== "12345") {
+        document.getElementById("loginError").style.display = "block";
+        return;
+      }
+      username = u;
+      // UI geçişi
+      document.getElementById("loginScreen").style.display = "none";
+      document.body.style.alignItems = "stretch";
+      document.body.style.justifyContent = "stretch";
+      document.getElementById("app").style.display = "flex";
 
-        connection.on("ReceiveMessage", (user, message) => {
-            const msg = document.createElement("div");
-            msg.textContent = `${user}: ${message}`;
-            messagesDiv.appendChild(msg);
+      // SignalR başlat
+      startSignalR();
+    }
+
+    // ====== SignalR ======
+    function startSignalR() {
+      connection = new signalR.HubConnectionBuilder()
+        .withUrl("/voicehub")
+        .withAutomaticReconnect()
+        .build();
+
+      // Kullanıcı listesi: [{id,name,room}]
+      connection.on("UpdateUserList", (userArr) => {
+        const box = document.getElementById("users");
+        box.innerHTML = "";
+        userArr.forEach(u => {
+          if (u.id === connection.connectionId) return; // kendini gösterme
+          const row = document.createElement("div");
+          row.className = "user";
+          row.textContent = `${u.name}${u.room ? " • " + u.room : ""}`;
+          row.onclick = () => startCall(u.id);
+          box.appendChild(row);
         });
+      });
 
-        connection.on("UserConnected", (username, allUsers) => updateUserList(allUsers));
-        connection.on("UserDisconnected", (username, allUsers) => updateUserList(allUsers));
+      // Mesajlar
+      connection.on("ReceiveMessage", (from, text) => {
+        appendMsg(from, text);
+      });
 
-        connection.on("ReceiveVoice", (user, audioData) => {
-            const buffer = new Uint8Array(audioData).buffer;
-            audioContext.decodeAudioData(buffer, decoded => {
-                const source = audioContext.createBufferSource();
-                source.buffer = decoded;
-                source.connect(audioContext.destination);
-                source.start(0);
-            });
-        });
+      // WebRTC sinyalleşme
+      connection.on("ReceiveOffer", async (callerId, offerJson) => {
+        await ensureMic();
+        createPeer(callerId);
+        await peer.setRemoteDescription(new RTCSessionDescription(JSON.parse(offerJson)));
+        const answer = await peer.createAnswer();
+        await peer.setLocalDescription(answer);
+        await connection.invoke("SendAnswer", callerId, JSON.stringify(answer));
+      });
 
-        function updateUserList(users) {
-            userList.innerHTML = "";
-            users.forEach(u => {
-                const li = document.createElement("li");
-                li.textContent = u;
-                li.classList.add("user-online");
-                userList.appendChild(li);
-            });
-        }
+      connection.on("ReceiveAnswer", async (_callerId, answerJson) => {
+        if (!peer) return;
+        await peer.setRemoteDescription(new RTCSessionDescription(JSON.parse(answerJson)));
+      });
 
-        function sendMessage() {
-            const message = messageInput.value;
-            if (message.trim() === "") return;
-            connection.invoke("SendMessage", currentRoom, "Ben", message);
-            messageInput.value = "";
-        }
+      connection.on("ReceiveIceCandidate", async (_fromId, candJson) => {
+        if (!peer || !candJson) return;
+        try {
+          await peer.addIceCandidate(new RTCIceCandidate(JSON.parse(candJson)));
+        } catch(e) { console.warn("ICE eklenemedi:", e); }
+      });
 
-        messageInput.addEventListener("keypress", (e) => {
+      connection.start()
+        .then(async () => {
+          // İsmi kaydet ve odaya katıl
+          await connection.invoke("Register", username);
+          await connection.invoke("JoinRoom", currentRoom);
+          appendSys(`"${currentRoom}" odasına katıldın. Mesaj yazmaya başlayabilirsin.`);
+          // Enter ile gönder
+          document.getElementById("message").addEventListener("keydown", (e) => {
             if (e.key === "Enter") sendMessage();
+          });
+        })
+        .catch(err => {
+          console.error("SignalR bağlantı hatası:", err);
+          appendSys("SignalR bağlantısı kurulamadı. Konsolu kontrol edin.");
         });
+    }
 
-        function joinRoom(room) {
-            currentRoom = room;
-            messagesDiv.innerHTML = "";
-            connection.invoke("JoinRoom", room);
+    // ====== Chat ======
+    function sendMessage() {
+      const input = document.getElementById("message");
+      const text = input.value.trim();
+      if (!text) return;
+      connection.invoke("SendMessage", currentRoom, text);
+      input.value = "";
+    }
+
+    function appendMsg(user, text) {
+      const chat = document.getElementById("chat");
+      const div = document.createElement("div");
+      div.className = "msg";
+      div.innerHTML = `<b>${escapeHtml(user)}:</b> ${escapeHtml(text)}`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function appendSys(text) {
+      const chat = document.getElementById("chat");
+      const div = document.createElement("div");
+      div.className = "msg sys";
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    // ====== Odalar ======
+    async function joinRoom(roomName) {
+      currentRoom = roomName;
+      // UI işaretleme
+      document.querySelectorAll(".room").forEach(r => r.classList.remove("active"));
+      const match = Array.from(document.querySelectorAll(".room")).find(r => r.textContent === roomName);
+      if (match) match.classList.add("active");
+      // Sunucuya bildir
+      try {
+        await connection.invoke("JoinRoom", roomName);
+      } catch (e) {
+        console.error(e);
+        appendSys("Odaya girerken hata oldu.");
+      }
+    }
+
+    // ====== WebRTC (Ses) ======
+    async function ensureMic() {
+      if (localStream) return;
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) {
+        appendSys("Mikrofon izni verilmedi. Lütfen tarayıcıdan izin verin.");
+        throw e;
+      }
+    }
+
+    function createPeer(targetId) {
+      // STUN ile daha stabil bağlantı
+      peer = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+      });
+
+      // Yerel ses
+      localStream.getTracks().forEach(t => peer.addTrack(t, localStream));
+
+      // ICE adaylarını gönder
+      peer.onicecandidate = e => {
+        if (e.candidate) {
+          connection.invoke("SendIceCandidate", targetId, JSON.stringify(e.candidate)).catch(console.error);
         }
+      };
 
-        async function toggleVoice() {
-            if (!localStream) {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const mediaRecorder = new MediaRecorder(localStream);
-                mediaRecorder.ondataavailable = async (event) => {
-                    if (event.data.size > 0) {
-                        const arrayBuffer = await event.data.arrayBuffer();
-                        connection.invoke("SendVoice", currentRoom, "Ben", Array.from(new Uint8Array(arrayBuffer)));
-                    }
-                };
-                mediaRecorder.start(500); // 0.5 saniyede bir gönder
-                document.getElementById("voiceBtn").innerText = "🔴 Bağlı";
-            } else {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-                document.getElementById("voiceBtn").innerText = "🎤 Sohbete Bağlan";
-            }
-        }
+      // Uzak ses
+      peer.ontrack = e => {
+        const remote = document.getElementById("remoteAudio");
+        remote.srcObject = e.streams[0];
+      };
+    }
 
-        connection.start().then(() => joinRoom("Genel")).catch(err => console.error(err));
-    </script>
+    async function startCall(targetId) {
+      try {
+        await ensureMic();
+        createPeer(targetId);
+        const offer = await peer.createOffer();
+        await peer.setLocalDescription(offer);
+        await connection.invoke("SendOffer", targetId, JSON.stringify(offer));
+        appendSys("Çağrı gönderildi. Karşı taraf kabul ederse ses bağlanır.");
+      } catch (e) {
+        console.error(e);
+        appendSys("Çağrı başlatılamadı. Mikrofon/izinleri kontrol edin.");
+      }
+    }
+  </script>
 </body>
 </html>

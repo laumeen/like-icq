@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("like-icq")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a2edbebbd1293902dd0afba74575703db9c6e10e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c775a0a93f5424bc784ccee6952c8a245c8c972f")]
 [assembly: System.Reflection.AssemblyProductAttribute("like-icq")]
 [assembly: System.Reflection.AssemblyTitleAttribute("like-icq")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
