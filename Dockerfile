@@ -2,23 +2,20 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Proje dosyasını kopyala
-COPY like-icq.csproj ./
+# Proje dosyalarını kopyala
+COPY ["like-icq.csproj", "./"]
+RUN dotnet restore "./like-icq.csproj"
 
-# Gerekli paketleri indir
-RUN dotnet restore ./like-icq.csproj
+# Geri kalan tüm dosyaları kopyala
+COPY . .
 
-# Tüm dosyaları kopyala
-COPY . ./
-
-# Publish et (dikkat: .csproj kullanıyoruz!)
-RUN dotnet publish ./like-icq.csproj -c Release -o /app/out
+# Build ve publish
+RUN dotnet publish "./like-icq.csproj" -c Release -o /app/publish
 
 # 2. Runtime aşaması
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-COPY --from=build /app/out ./
-
-# Render için PORT değişkenini kullan
-ENV ASPNETCORE_URLS=http://+:$PORT
+COPY --from=build /app/publish .
+EXPOSE 5000
+ENV ASPNETCORE_URLS=http://+:5000
 ENTRYPOINT ["dotnet", "like-icq.dll"]
