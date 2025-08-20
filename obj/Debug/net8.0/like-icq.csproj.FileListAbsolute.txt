@@ -22,3 +22,4 @@ C:\Users\armag\OneDrive\Masaüstü\like-icq\obj\Debug\net8.0\refint\like-icq.dll
 C:\Users\armag\OneDrive\Masaüstü\like-icq\obj\Debug\net8.0\like-icq.pdb
 C:\Users\armag\OneDrive\Masaüstü\like-icq\obj\Debug\net8.0\like-icq.genruntimeconfig.cache
 C:\Users\armag\OneDrive\Masaüstü\like-icq\obj\Debug\net8.0\ref\like-icq.dll
+C:\Users\armag\OneDrive\Masaüstü\like-icq\obj\Debug\net8.0\like-icq.sourcelink.json

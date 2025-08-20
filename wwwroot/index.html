@@ -3,118 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <title>Like ICQ Voice Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <style>
         body {
-            margin: 0;
+            background-color: #121212;
+            color: white;
             font-family: Arial, sans-serif;
+            margin: 0;
             display: flex;
-            height: 100vh;
         }
         .sidebar {
-            width: 250px;
-            background: #2c2f33;
-            color: white;
-            padding: 20px;
+            width: 220px;
+            background: #1f1f1f;
+            padding: 15px;
         }
-        .sidebar h2 {
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        .main {
+        .chat-container {
             flex: 1;
-            background: #f2f2f2;
-            padding: 20px;
+            background: #2a2a2a;
+            margin: 20px;
+            padding: 15px;
+            border: 2px solid black;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
         }
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            background: #7289da;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-left: 5px;
-        }
-        .btn:hover {
-            background: #5b6eae;
-        }
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-        .user-item {
-            margin: 5px 0;
-            padding: 5px;
-            background: #3a3d41;
-            border-radius: 4px;
-        }
-        .room-box {
+        .messages {
+            flex: 1;
+            overflow-y: auto;
             margin-bottom: 10px;
+            background: #333;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .input-container {
+            display: flex;
+        }
+        .input-container input {
+            flex: 1;
+            padding: 8px;
+        }
+        .input-container button {
+            padding: 8px 12px;
+        }
+        .user-online {
+            color: lightgreen;
         }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h2>Kullanıcı: <span id="username"></span></h2>
-        <h2>Katılanlar</h2>
+        <h3>Odalar</h3>
+        <button onclick="joinRoom('Genel')">Genel</button>
+        <button onclick="joinRoom('Oyun')">Oyun</button>
+        <button onclick="joinRoom('Müzik')">Müzik</button>
+        <hr>
+        <h3>Kullanıcılar</h3>
         <ul id="userList"></ul>
     </div>
-    <div class="main">
-        <h1>Like ICQ Voice Chat</h1>
-        <div class="room-box">
-            <input type="text" id="roomInput" placeholder="Oda adı yaz...">
-            <button id="joinBtn" class="btn">Sohbete Katıl</button>
+
+    <div class="chat-container">
+        <h2>Sohbet</h2>
+        <div id="messages" class="messages"></div>
+        <div class="input-container">
+            <input id="messageInput" placeholder="Mesaj yaz..." />
+            <button onclick="sendMessage()">Gönder</button>
         </div>
-        <p id="status"></p>
+        <button id="voiceBtn" onclick="toggleVoice()">🎤 Sohbete Bağlan</button>
     </div>
 
-    <!-- SignalR -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
-
     <script>
-        const userName = "User" + Math.floor(Math.random() * 1000);
-        document.getElementById("username").textContent = userName;
-
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/hub/voice")
+            .withUrl("/voiceHub")
             .build();
 
-        connection.on("UserJoined", (user) => {
-            const li = document.createElement("li");
-            li.textContent = user;
-            li.classList.add("user-item");
-            document.getElementById("userList").appendChild(li);
+        let currentRoom = "Genel";
+        let localStream;
+        let audioContext = new AudioContext();
+
+        const messagesDiv = document.getElementById("messages");
+        const userList = document.getElementById("userList");
+        const messageInput = document.getElementById("messageInput");
+
+        connection.on("ReceiveMessage", (user, message) => {
+            const msg = document.createElement("div");
+            msg.textContent = `${user}: ${message}`;
+            messagesDiv.appendChild(msg);
         });
 
-        // Ses başlat
-        async function startVoice() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                document.getElementById("status").textContent = "🎤 Mikrofon aktif!";
-                console.log("Mikrofon açıldı:", stream);
+        connection.on("UserConnected", (username, allUsers) => updateUserList(allUsers));
+        connection.on("UserDisconnected", (username, allUsers) => updateUserList(allUsers));
 
-                // Sesi geri dinleme için test (kendi sesini duymamak için yorum satırı yapabilirsin)
-                const audio = document.createElement("audio");
-                audio.srcObject = stream;
-                audio.autoplay = true;
-                document.body.appendChild(audio);
+        connection.on("ReceiveVoice", (user, audioData) => {
+            const buffer = new Uint8Array(audioData).buffer;
+            audioContext.decodeAudioData(buffer, decoded => {
+                const source = audioContext.createBufferSource();
+                source.buffer = decoded;
+                source.connect(audioContext.destination);
+                source.start(0);
+            });
+        });
 
-            } catch (err) {
-                console.error("Mikrofon hatası:", err);
-                document.getElementById("status").textContent = "❌ Mikrofon açılamadı";
+        function updateUserList(users) {
+            userList.innerHTML = "";
+            users.forEach(u => {
+                const li = document.createElement("li");
+                li.textContent = u;
+                li.classList.add("user-online");
+                userList.appendChild(li);
+            });
+        }
+
+        function sendMessage() {
+            const message = messageInput.value;
+            if (message.trim() === "") return;
+            connection.invoke("SendMessage", currentRoom, "Ben", message);
+            messageInput.value = "";
+        }
+
+        messageInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+
+        function joinRoom(room) {
+            currentRoom = room;
+            messagesDiv.innerHTML = "";
+            connection.invoke("JoinRoom", room);
+        }
+
+        async function toggleVoice() {
+            if (!localStream) {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(localStream);
+                mediaRecorder.ondataavailable = async (event) => {
+                    if (event.data.size > 0) {
+                        const arrayBuffer = await event.data.arrayBuffer();
+                        connection.invoke("SendVoice", currentRoom, "Ben", Array.from(new Uint8Array(arrayBuffer)));
+                    }
+                };
+                mediaRecorder.start(500); // 0.5 saniyede bir gönder
+                document.getElementById("voiceBtn").innerText = "🔴 Bağlı";
+            } else {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+                document.getElementById("voiceBtn").innerText = "🎤 Sohbete Bağlan";
             }
         }
 
-        document.getElementById("joinBtn").addEventListener("click", async () => {
-            try {
-                await connection.start();
-                const room = document.getElementById("roomInput").value || "Genel";
-                await connection.invoke("Join", userName, room);
-                document.getElementById("status").textContent = `✅ Odaya katıldın: ${room}`;
-                startVoice();
-            } catch (err) {
-                console.error(err.toString());
-            }
-        });
+        connection.start().then(() => joinRoom("Genel")).catch(err => console.error(err));
     </script>
 </body>
 </html>

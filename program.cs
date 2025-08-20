@@ -1,24 +1,19 @@
 using LikeICQ.Hubs; // VoiceHub burada tanımlı
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// SignalR servisini ekle
+// SignalR servislerini ekle
 builder.Services.AddSignalR();
-
-// Static dosyaları (index.html) okumak için
-builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// wwwroot klasöründeki dosyaları sun
+// wwwroot klasöründeki statik dosyaları sun
 app.UseStaticFiles();
 
-app.MapGet("/", () => Results.Redirect("/index.html"));
+// Root (/) isteğinde index.html dosyasını aç
+app.MapFallbackToFile("index.html");
 
-// SignalR hub route
-app.MapHub<VoiceHub>("/hub/voice");
+// VoiceHub bağlantısını ayarla
+app.MapHub<VoiceHub>("/voiceHub");
 
 app.Run();

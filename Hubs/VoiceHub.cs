@@ -1,31 +1,44 @@
 using Microsoft.AspNetCore.SignalR;
-using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace LikeICQ.Hubs
 {
     public class VoiceHub : Hub
     {
-        // Kullanıcı odaya katılır
-        public async Task Join(string userName, string roomName)
-        {
-            // Kullanıcı SignalR grubuna ekleniyor
-            await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
+        private static ConcurrentDictionary<string, string> Users = new();
 
-            // Sadece o odadaki diğer kullanıcılara haber ver
-            await Clients.Group(roomName).SendAsync("UserJoined", userName);
+        public override async Task OnConnectedAsync()
+        {
+            string username = Context.ConnectionId.Substring(0, 5); // kısa id
+            Users[Context.ConnectionId] = username;
+
+            await Clients.All.SendAsync("UserConnected", username, Users.Values.ToList());
+            await base.OnConnectedAsync();
         }
 
-        // Kullanıcı odadan ayrıldığında
-        public async Task Leave(string userName, string roomName)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
-            await Clients.Group(roomName).SendAsync("UserLeft", userName);
+            if (Users.TryRemove(Context.ConnectionId, out string? username))
+            {
+                await Clients.All.SendAsync("UserDisconnected", username, Users.Values.ToList());
+            }
+            await base.OnDisconnectedAsync(exception);
         }
 
-        // Basit test için mesaj fonksiyonu
-        public async Task SendMessage(string roomName, string userName, string message)
+        public async Task SendMessage(string room, string user, string message)
         {
-            await Clients.Group(roomName).SendAsync("ReceiveMessage", userName, message);
+            await Clients.Group(room).SendAsync("ReceiveMessage", user, message);
+        }
+
+        public async Task JoinRoom(string room)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, room);
+            await Clients.Group(room).SendAsync("ReceiveMessage", "Sistem", $"{Users[Context.ConnectionId]} odaya katıldı.");
+        }
+
+        public async Task SendVoice(string room, string user, byte[] audioData)
+        {
+            await Clients.OthersInGroup(room).SendAsync("ReceiveVoice", user, audioData);
         }
     }
 }
